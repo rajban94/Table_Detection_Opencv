@@ -22,7 +22,24 @@ Table Detection with OpenCV is a Python project that takes PDFs as input, checks
 - openpyxl
 - easyocr
 
-## Installation
+## Create and Activate Environment
+```bash
+conda create -n <env_name> python=3.7
+conda activate <env_name>
+```
+## Installation of packages
 
 ```bash
 pip install -r requirements.txt
+```
+
+## Clone the repository
+
+```bash
+git clone https://github.com/your-username/Table_Detection_Opencv.git
+```
+
+## Run the Script
+
+- Activate the environment if not activated.
+- Change the path of the env in run.bat and double click the run.bat for execution.
