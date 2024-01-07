@@ -1,6 +1,6 @@
 # Table Detection with OpenCV
 
-Table Detection with OpenCV is a Python project that takes PDFs as input, checks the alignment, re-aligns if required, detects the table structure, extracts data, and dumps it into an Excel file. The current implementation focuses on bordered tables.
+Table Detection with OpenCV is a Python project that takes PDFs as input, checks the alignment, re-aligns if required, detects the table structure, extracts data, and dumps it into an Excel file. The current implementation focuses on bordered and Un-bordered tables.
 
 ## Features
 

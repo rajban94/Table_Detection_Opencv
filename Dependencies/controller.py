@@ -2,6 +2,7 @@ from imageconversion import *
 from rotateimage import *
 from tabledetect import *
 from tableextract import *
+from unbordered import *
 import easyocr
 import warnings
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -16,7 +17,11 @@ def main(ocr, pdfFile, outPathImg, outPathExcel):
     print(f"*********************** IMAGE ROTATION COMPLETED FOR {os.path.basename(imagePath)} *****************\n")
 
     print(f"*********************** IMAGE DETECTION STARTED FOR {os.path.basename(imagePath)} ******************\n")
-    bboxDtls, filename, cvImg = detectMain(rotateImgPath)
+    try:
+        bboxDtls, filename, cvImg = detectMain(rotateImgPath)
+    except:
+        unborderedPath = imageProcess(rotateImgPath)
+        bboxDtls, filename, cvImg = detectMain(unborderedPath)
     print(f"*********************** IMAGE DETECTION COMPLETED FOR {os.path.basename(imagePath)} ****************\n")
 
     print(f"*********************** IMAGE EXTRACTION STARTED FOR {os.path.basename(imagePath)} *****************\n")
