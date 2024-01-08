@@ -1,6 +1,17 @@
 import cv2
 import numpy as np
 
+def isLineLntersecting_box(startPoint, endPoint, box):
+    x, y, w, h = box
+    rect1 = [(startPoint[0], startPoint[1]), (endPoint[0], endPoint[1])]
+    rect2 = [(x, y), (x + w, y + h)]
+
+    if (rect1[0][0] > rect2[1][0] or rect1[1][0] < rect2[0][0] or
+        rect1[0][1] > rect2[1][1] or rect1[1][1] < rect2[0][1]):
+        return False
+    else:
+        return True
+
 def imageProcess(imgPath):
     cvImg = cv2.imread(imgPath)
     res = cvImg.copy()
@@ -40,31 +51,31 @@ def imageProcess(imgPath):
     while columnBoxes:
 
         min_x = min(colBox[0] for colBox in columnBoxes)
-        min_sublist_col = next(colBox for colBox in columnBoxes if colBox[0] == min_x)
+        minSublistCol = next(colBox for colBox in columnBoxes if colBox[0] == min_x)
 
-        start_point_col = (min_sublist_col[0]+ 2 + min_sublist_col[2], y_new)
-        end_point_col = (min_sublist_col[0] + min_sublist_col[2]+ 2, y_new + h_new)
-        cv2.line(res, start_point_col, end_point_col, (0, 0, 0), 4)
+        startPointCol = (minSublistCol[0]+ 2 + minSublistCol[2], y_new)
+        endPointCol = (minSublistCol[0] + minSublistCol[2]+ 2, y_new + h_new)
 
-        remainColBoxes.append(min_sublist_col)
-        columnBoxes.remove(min_sublist_col)
+        isIntersectCol = any(isLineLntersecting_box(startPointCol, endPointCol, colBox) for colBox in allBoxes)
+        if not isIntersectCol:
+            cv2.line(res, startPointCol, endPointCol, (0, 0, 0), 4)
+            remainColBoxes.append(minSublistCol)
+        columnBoxes.remove(minSublistCol)
 
     # Draw row grid lines
     while rowBoxes:
         max_y = max(rowBox[1] + rowBox[3] for rowBox in rowBoxes)
-        min_sublist_row = next(rowBox for rowBox in rowBoxes if rowBox[1] + rowBox[3] == max_y)
+        minSublistRow = next(rowBox for rowBox in rowBoxes if rowBox[1] + rowBox[3] == max_y)
 
-        start_point_row = (x_new, min_sublist_row[1] + min_sublist_row[3] + 2)
-        end_point_row = (x_new + w_new, min_sublist_row[1] + min_sublist_row[3] + 2)
+        startPointRow = (x_new, minSublistRow[1] + minSublistRow[3] + 2)
+        end_point_row = (x_new + w_new, minSublistRow[1] + minSublistRow[3] + 2)
 
-        cv2.line(res, start_point_row, end_point_row, (0, 0, 0), 4)
-
-        remainRowBoxes.append(min_sublist_row)
-        rowBoxes.remove(min_sublist_row)
+        isIntersectRow = any(isLineLntersecting_box(startPointRow, end_point_row, rowBox) for rowBox in allBoxes)
+        if not isIntersectRow:
+            cv2.line(res, startPointRow, end_point_row, (0, 0, 0), 4)
+            remainRowBoxes.append(minSublistRow)
+        rowBoxes.remove(minSublistRow)
 
     cv2.imwrite(imgPath, res)
 
     return imgPath
-
-# img = './test6.jpg'
-# cellBbox = imageProcess(img)
