@@ -12,8 +12,36 @@ def isLineLntersecting_box(startPoint, endPoint, box):
     else:
         return True
 
+def omitLines(img):
+    
+    res = img.copy()
+    grayImg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    threshImg = cv2.threshold(grayImg, 200, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+
+    vKernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 40))
+    rmVertical = cv2.morphologyEx(threshImg, cv2.MORPH_OPEN, vKernel, iterations=2)
+
+    hKernel = cv2.getStructuringElement(cv2.MORPH_RECT, (40, 1))
+    rmHorizontal = cv2.morphologyEx(threshImg, cv2.MORPH_OPEN, hKernel, iterations=2)
+
+    cnts = cv2.findContours(rmVertical, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+
+    cnts1 = cv2.findContours(rmHorizontal, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts1 = cnts1[0] if len(cnts1) == 2 else cnts1[1]
+
+    for c in cnts:
+        cv2.drawContours(res, [c], -1, (255,255,255), 4)
+
+    for c1 in cnts1:
+        cv2.drawContours(res, [c1], -1, (255,255,255), 4)
+    
+    return res
+
 def imageProcess(imgPath):
+    
     cvImg = cv2.imread(imgPath)
+    cvImg = omitLines(cvImg)
     res = cvImg.copy()
     grayImg = cv2.cvtColor(cvImg, cv2.COLOR_BGR2GRAY)
     thresh = cv2.threshold(grayImg, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]

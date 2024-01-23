@@ -12,21 +12,22 @@ def main(ocr, pdfFile, outPathImg, outPathExcel):
     imagePath = generateImage(pdfFile, outPathImg)
     print(f"*********************** IMAGE CONVERSION COMPLETED FOR {os.path.basename(pdfFile)} *********************\n")
 
-    print(f"*********************** IMAGE ROTATION STARTED FOR {os.path.basename(imagePath)} *******************\n")
-    rotateImgPath = rotateMain(imagePath)
-    print(f"*********************** IMAGE ROTATION COMPLETED FOR {os.path.basename(imagePath)} *****************\n")
+    for eachImgPath in imagePath:
+        print(f"*********************** IMAGE ROTATION STARTED FOR {os.path.basename(eachImgPath)} *******************\n")
+        rotateImgPath = rotateMain(eachImgPath)
+        print(f"*********************** IMAGE ROTATION COMPLETED FOR {os.path.basename(eachImgPath)} *****************\n")
 
-    print(f"*********************** IMAGE DETECTION STARTED FOR {os.path.basename(imagePath)} ******************\n")
-    try:
-        bboxDtls, filename, cvImg = detectMain(rotateImgPath)
-    except:
-        unborderedPath = imageProcess(rotateImgPath)
-        bboxDtls, filename, cvImg = detectMain(unborderedPath)
-    print(f"*********************** IMAGE DETECTION COMPLETED FOR {os.path.basename(imagePath)} ****************\n")
+        print(f"*********************** IMAGE DETECTION STARTED FOR {os.path.basename(eachImgPath)} ******************\n")
+        try:
+            bboxDtls, filename, cvImg = detectMain(rotateImgPath)
+        except:
+            unborderedPath = imageProcess(rotateImgPath)
+            bboxDtls, filename, cvImg = detectMain(unborderedPath)
+        print(f"*********************** IMAGE DETECTION COMPLETED FOR {os.path.basename(eachImgPath)} ****************\n")
 
-    print(f"*********************** IMAGE EXTRACTION STARTED FOR {os.path.basename(imagePath)} *****************\n")
-    outCommand = extractMain(ocr, bboxDtls, cvImg, outPathExcel, filename)
-    print(f"*********************** IMAGE EXTRACTION COMPLETED FOR {os.path.basename(imagePath)} ***************\n")
+        print(f"*********************** IMAGE EXTRACTION STARTED FOR {os.path.basename(eachImgPath)} *****************\n")
+        outCommand = extractMain(ocr, bboxDtls, cvImg, outPathExcel, filename)
+        print(f"*********************** IMAGE EXTRACTION COMPLETED FOR {os.path.basename(eachImgPath)} ***************\n")
 
     print(outCommand)
 
