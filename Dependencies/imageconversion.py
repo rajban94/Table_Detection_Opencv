@@ -3,6 +3,7 @@ from pdf2image import convert_from_path
 
 def generateImage(pdfFile, imageDir):
 
+    imgPath = []
     pdfImgPath = imageDir+'/'+os.path.basename(pdfFile).replace('.pdf','').replace('.PDF','')
     if not os.path.exists(pdfImgPath):
         os.makedirs(pdfImgPath)
@@ -12,6 +13,6 @@ def generateImage(pdfFile, imageDir):
 
     for i in range(len(pdfImages)):
         pdfImages[i].save(pdfImgPath + '/' + imgName + '_page' + str(i) + '.jpg', 'JPEG')
-    imgPath = pdfImgPath + '/' + imgName + '_page' + str(i) + '.jpg'
+        imgPath.append(pdfImgPath + '/' + imgName + '_page' + str(i) + '.jpg')
     
-    return imgPath    
+    return imgPath

@@ -1,7 +1,31 @@
 import cv2
 import numpy as np
+from PIL import Image, ImageStat
 
-def isLineLntersecting_box(startPoint, endPoint, box):
+def isColorImage(numpy_image, thumb_size=40, MSE_cutoff=22, adjust_color_bias=True):
+    pil_img = Image.fromarray(np.uint8(numpy_image)).convert('RGB')
+    bands = pil_img.getbands()
+    if bands == ('R','G','B') or bands== ('R','G','B','A'):
+        thumb = pil_img.resize((thumb_size,thumb_size))
+        SSE, bias = 0, [0,0,0]
+        if adjust_color_bias:
+            bias = ImageStat.Stat(thumb).mean[:3]
+            bias = [b - sum(bias)/3 for b in bias ]
+        for pixel in thumb.getdata():
+            mu = sum(pixel)/3
+            SSE += sum((pixel[i] - mu - bias[i])*(pixel[i] - mu - bias[i]) for i in [0,1,2])
+        MSE = float(SSE)/(thumb_size*thumb_size)
+        # print("MSE::",MSE)
+        if MSE <= MSE_cutoff:
+           return False, MSE
+        else:
+            return True, MSE
+    elif len(bands)==1:
+        return False, MSE
+    else:
+        return False, MSE
+
+def isLineLntersectingBox(startPoint, endPoint, box):
     x, y, w, h = box
     rect1 = [(startPoint[0], startPoint[1]), (endPoint[0], endPoint[1])]
     rect2 = [(x, y), (x + w, y + h)]
@@ -31,17 +55,23 @@ def omitLines(img):
     cnts1 = cnts1[0] if len(cnts1) == 2 else cnts1[1]
 
     for c in cnts:
-        cv2.drawContours(res, [c], -1, (255,255,255), 4)
+        cv2.drawContours(res, [c], -1, (255,255,255), 12)
 
     for c1 in cnts1:
-        cv2.drawContours(res, [c1], -1, (255,255,255), 4)
+        cv2.drawContours(res, [c1], -1, (255,255,255), 12)
     
     return res
 
+def filterBoxes(boxes, table_width, limit=100):
+
+    widthThreshold=table_width*.05
+    return [box for box in boxes if (abs(box[2] - table_width*.75) > widthThreshold) and round(abs(box[2] - table_width) > limit)]
+
 def imageProcess(imgPath):
-    
     cvImg = cv2.imread(imgPath)
-    cvImg = omitLines(cvImg)
+    colored, MSE = isColorImage(cvImg)
+    if colored == False:
+        cvImg = omitLines(cvImg)
     res = cvImg.copy()
     grayImg = cv2.cvtColor(cvImg, cv2.COLOR_BGR2GRAY)
     thresh = cv2.threshold(grayImg, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
@@ -55,24 +85,29 @@ def imageProcess(imgPath):
         x, y, w, h = cv2.boundingRect(c)
         if h > 20:
             x, y, w, h = x, y - 2, w, h + 4
-            # cv2.rectangle(res, (x, y), (x + w, y + h), (0, 255, 0), 2)
             allBoxes.append([x, y, w, h])
 
     x_min = [min([box[0] - 5 for box in allBoxes]), min([box[1] - 5 for box in allBoxes])]
     y_max = [max([box[0] + box[2] + 5 for box in allBoxes]), max([box[1] + box[3] + 5 for box in allBoxes])]
+    w_table = y_max[0] - x_min[0]
+    
+    filterd_boxes = filterBoxes(allBoxes, w_table)
 
-    table_area = x_min + y_max
-    x1, y1, w1, h1 = table_area
+    x_min_new = [min([box[0] - 5 for box in filterd_boxes]), min([box[1] - 5 for box in filterd_boxes])]
+    y_max_new = [max([box[0] + box[2] + 5 for box in filterd_boxes]), max([box[1] + box[3] + 5 for box in filterd_boxes])]
+
+    tableArea = x_min_new + y_max_new
+    x1, y1, w1, h1 = tableArea
     cv2.rectangle(res, (x1, y1), (w1, h1), (0, 0, 0), 4)
 
-    x_new = x_min[0]
-    y_new = x_min[1]
-    w_new = y_max[0] - x_min[0]
-    h_new = y_max[1] - x_min[1]
-
-    rowBoxes = allBoxes.copy()
+    x_new = x_min_new[0]
+    y_new = x_min_new[1]
+    w_new = y_max_new[0] - x_min_new[0]
+    h_new = y_max_new[1] - x_min_new[1]
+    
+    rowBoxes = filterd_boxes.copy()
     remainRowBoxes = []
-    columnBoxes = allBoxes.copy()
+    columnBoxes = filterd_boxes.copy()
     remainColBoxes = []
 
     # Draw column grid lines at the bottom
@@ -84,7 +119,7 @@ def imageProcess(imgPath):
         startPointCol = (minSublistCol[0]+ 2 + minSublistCol[2], y_new)
         endPointCol = (minSublistCol[0] + minSublistCol[2]+ 2, y_new + h_new)
 
-        isIntersectCol = any(isLineLntersecting_box(startPointCol, endPointCol, colBox) for colBox in allBoxes)
+        isIntersectCol = any(isLineLntersectingBox(startPointCol, endPointCol, colBox) for colBox in filterd_boxes)
         if not isIntersectCol:
             cv2.line(res, startPointCol, endPointCol, (0, 0, 0), 4)
             remainColBoxes.append(minSublistCol)
@@ -98,7 +133,7 @@ def imageProcess(imgPath):
         startPointRow = (x_new, minSublistRow[1] + minSublistRow[3] + 2)
         end_point_row = (x_new + w_new, minSublistRow[1] + minSublistRow[3] + 2)
 
-        isIntersectRow = any(isLineLntersecting_box(startPointRow, end_point_row, rowBox) for rowBox in allBoxes)
+        isIntersectRow = any(isLineLntersectingBox(startPointRow, end_point_row, rowBox) for rowBox in filterd_boxes)
         if not isIntersectRow:
             cv2.line(res, startPointRow, end_point_row, (0, 0, 0), 4)
             remainRowBoxes.append(minSublistRow)

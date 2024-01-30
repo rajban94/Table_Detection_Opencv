@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 import os
+from unbordered import *
 
 def sortContours(cnts, method = 'left-to-right'):
 
@@ -106,7 +107,7 @@ def getBboxDtls(img, imgVH, tableDtls, imgPath):
     boxes = []
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
-        if (h>50) and (h<500):
+        if (h>30) and (h<500):
             boxes.append([x, y, w, h])
 
     bboxDtls = {}
@@ -132,16 +133,45 @@ def getBboxDtls(img, imgVH, tableDtls, imgPath):
     return bboxDtls
 
 def detectMain(imgPath):
+    try:
+        cvImg = cv2.imread(imgPath)
+        fileName = os.path.basename(imgPath).replace('_rotated.jpg', '')
+        tableImg, tableRect = getProperTable(cvImg)
+
+        if len(tableRect) >= 1 and any(rect[-1]>=300 for rect in tableRect):
+            tableImg = drawLines(tableImg)
+            res = tableImg.copy()
+            preImg = preProcess(tableImg)
+            vLineImg = verticalLineDetect(preImg)
+            hLineImg = horizonalLineDetect(preImg)
+            combineLineImg = combineLines(res, vLineImg, hLineImg)
+            bboxDtls = getBboxDtls(tableImg, combineLineImg, tableRect, imgPath)
+            return bboxDtls, fileName, res
     
-    cvImg = cv2.imread(imgPath)
-    fileName = os.path.basename(imgPath).replace('_rotated.jpg', '')
-    tableImg, tableRect = getProperTable(cvImg)
-    tableImg = drawLines(tableImg)
-    res = tableImg.copy()
-    preImg = preProcess(tableImg)
-    vLineImg = verticalLineDetect(preImg)
-    hLineImg = horizonalLineDetect(preImg)
-    combineLineImg = combineLines(res, vLineImg, hLineImg)
-    bboxDtls = getBboxDtls(tableImg, combineLineImg, tableRect, imgPath)
-    
-    return bboxDtls, fileName, res
+        else:
+            unborderedPath = imageProcess(imgPath)
+            cvImg = cv2.imread(unborderedPath)
+            fileName = os.path.basename(imgPath).replace('_rotated.jpg', '')
+            tableImg, tableRect = getProperTable(cvImg)
+            tableImg = drawLines(tableImg)
+            res = tableImg.copy()
+            preImg = preProcess(tableImg)
+            vLineImg = verticalLineDetect(preImg)
+            hLineImg = horizonalLineDetect(preImg)
+            combineLineImg = combineLines(res, vLineImg, hLineImg)
+            bboxDtls = getBboxDtls(tableImg, combineLineImg, tableRect, imgPath)         
+            return bboxDtls, fileName, res
+        
+    except:
+        unborderedPath = imageProcess(imgPath)
+        cvImg = cv2.imread(unborderedPath)
+        fileName = os.path.basename(imgPath).replace('_rotated.jpg', '')
+        tableImg, tableRect = getProperTable(cvImg)
+        tableImg = drawLines(tableImg)
+        res = tableImg.copy()
+        preImg = preProcess(tableImg)
+        vLineImg = verticalLineDetect(preImg)
+        hLineImg = horizonalLineDetect(preImg)
+        combineLineImg = combineLines(res, vLineImg, hLineImg)
+        bboxDtls = getBboxDtls(tableImg, combineLineImg, tableRect, imgPath)
+        return bboxDtls, fileName, res
